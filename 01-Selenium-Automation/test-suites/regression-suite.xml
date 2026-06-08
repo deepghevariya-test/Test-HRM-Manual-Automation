@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  FULL REGRESSION SUITE
+  Complete test coverage across all HRM modules.
+  Run time: ~45-60 minutes
+  
+  Usage: mvn test -Dsuite=regression-suite
+         mvn test -Dsuite=regression-suite -Dheadless=true
+-->
+<suite name="HRM_Full_Regression_Suite" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="com.hrm.listeners.TestNGListener"/>
+    </listeners>
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="false"/>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!--  MODULE 1: Authentication                       -->
+    <!-- ══════════════════════════════════════════════ -->
+    <test name="Regression_Authentication" preserve-order="true">
+        <classes>
+            <class name="com.hrm.tests.LoginTests"/>
+        </classes>
+    </test>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!--  MODULE 2: Employee Management                  -->
+    <!-- ══════════════════════════════════════════════ -->
+    <test name="Regression_Employee_Management" preserve-order="true">
+        <classes>
+            <class name="com.hrm.tests.EmployeeCRUDTests"/>
+        </classes>
+    </test>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!--  MODULE 3: Leave Management                     -->
+    <!-- ══════════════════════════════════════════════ -->
+    <test name="Regression_Leave_Management" preserve-order="true">
+        <classes>
+            <class name="com.hrm.tests.LeaveWorkflowTests"/>
+        </classes>
+    </test>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!--  MODULE 4: Payroll                              -->
+    <!-- ══════════════════════════════════════════════ -->
+    <test name="Regression_Payroll" preserve-order="true">
+        <classes>
+            <class name="com.hrm.tests.PayrollCalculationTests"/>
+        </classes>
+    </test>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!--  MODULE 5: Recruitment                          -->
+    <!-- ══════════════════════════════════════════════ -->
+    <test name="Regression_Recruitment" preserve-order="true">
+        <classes>
+            <class name="com.hrm.tests.RecruitmentPipelineTests"/>
+        </classes>
+    </test>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!--  MODULE 6: Search and Filter                    -->
+    <!-- ══════════════════════════════════════════════ -->
+    <test name="Regression_Search_And_Filter" preserve-order="true">
+        <classes>
+            <class name="com.hrm.tests.SearchAndFilterTests"/>
+        </classes>
+    </test>
+
+</suite>

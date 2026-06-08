@@ -1,0 +1,93 @@
+# ===========================
+# HRM Testing Framework .gitignore
+# ===========================
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven Wrapper
+!mvnw
+!mvnw.cmd
+!.mvn/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.settings/
+.classpath
+.project
+bin/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+
+# Logs
+logs/
+*.log
+log4j-test.properties
+
+# Test Reports (auto-generated)
+01-Selenium-Automation/reports/
+01-Selenium-Automation/screenshots/failed_tests/*.png
+02-API-Testing/Newman_Reports/
+04-Performance-Testing-JMeter/Reports/
+
+# Allure results
+allure-results/
+allure-report/
+
+# WebDriver binaries
+drivers/
+*.exe
+chromedriver
+geckodriver
+msedgedriver
+
+# Test data - sensitive
+src/test/resources/config-local.properties
+**/secure_credentials*
+
+# Compiled class files
+*.class
+
+# JMeter results
+*.jtl
+*.csv.bak
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+
+# Node modules (Newman)
+02-API-Testing/node_modules/
+
+# Docker volumes
+.docker/
+
+# Environment files
+.env
+.env.local
+*.env
+
+# APK files (too large for Git)
+03-Mobile-Testing-Appium/resources/apps/*.apk
+03-Mobile-Testing-Appium/resources/apps/*.ipa

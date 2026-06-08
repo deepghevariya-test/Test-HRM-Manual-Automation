@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  SMOKE TEST SUITE — Critical Path Tests
+  Covers the most important user journeys.
+  Run time: ~5-10 minutes
+  
+  Usage: mvn test -Dsuite=smoke-test
+-->
+<suite name="HRM_Smoke_Suite" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="com.hrm.listeners.TestNGListener"/>
+    </listeners>
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="false"/>
+
+    <test name="Smoke_Authentication">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.hrm.tests.LoginTests">
+                <methods>
+                    <include name="TC_LGN_001_validAdminLogin"/>
+                    <include name="TC_LGN_009_logoutFunctionality"/>
+                    <include name="TC_LGN_010_backButtonAfterLogout"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Smoke_Employee_Management">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.hrm.tests.EmployeeCRUDTests">
+                <methods>
+                    <include name="TC_EMP_001_addEmployeeWithMandatoryFields"/>
+                    <include name="TC_EMP_005_employeeListLoads"/>
+                    <include name="TC_EMP_006_searchEmployeeByName"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Smoke_Leave_Management">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.hrm.tests.LeaveWorkflowTests">
+                <methods>
+                    <include name="TC_LVE_001_applyCasualLeave"/>
+                    <include name="TC_LVE_006_viewLeaveList"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Smoke_Payroll">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.hrm.tests.PayrollCalculationTests">
+                <methods>
+                    <include name="TC_PAY_001_viewPayGradesPage"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Smoke_Recruitment">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.hrm.tests.RecruitmentPipelineTests">
+                <methods>
+                    <include name="TC_REC_001_viewJobVacancies"/>
+                    <include name="TC_REC_004_viewCandidatesPage"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

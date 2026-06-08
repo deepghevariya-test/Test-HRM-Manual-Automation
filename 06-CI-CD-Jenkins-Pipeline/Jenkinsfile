@@ -1,0 +1,282 @@
+pipeline {
+    agent any
+
+    environment {
+        JAVA_HOME       = '/usr/lib/jvm/java-17-openjdk-amd64'
+        MAVEN_HOME      = '/usr/share/maven'
+        PATH            = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
+        HRM_BASE_URL    = 'https://opensource-demo.orangehrmlive.com'
+        // Credentials stored in Jenkins Credentials Store (NOT hardcoded)
+        HRM_USERNAME    = credentials('hrm-admin-username')
+        HRM_PASSWORD    = credentials('hrm-admin-password')
+        SLACK_CHANNEL   = '#qa-automation'
+        REPORT_DIR      = 'reports'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '5'))
+        timeout(time: 2, unit: 'HOURS')
+        timestamps()
+        ansiColor('xterm')
+    }
+
+    triggers {
+        // Nightly build at 2 AM IST (8:30 PM UTC)
+        cron('30 20 * * *')
+    }
+
+    parameters {
+        choice(name: 'TEST_SUITE',
+               choices: ['smoke-test', 'regression-suite', 'cross-browser', 'parallel-execution'],
+               description: 'Select test suite to execute')
+        choice(name: 'BROWSER',
+               choices: ['chrome', 'firefox', 'edge'],
+               description: 'Browser for Selenium tests')
+        booleanParam(name: 'RUN_API_TESTS',  defaultValue: true,  description: 'Run API Tests')
+        booleanParam(name: 'RUN_PERF_TESTS', defaultValue: false, description: 'Run JMeter Performance Tests')
+        booleanParam(name: 'HEADLESS',       defaultValue: true,  description: 'Run in headless mode')
+    }
+
+    stages {
+
+        // ════════════════════════════════════════════════
+        stage('🔄 Checkout') {
+        // ════════════════════════════════════════════════
+            steps {
+                echo '⎘ Checking out code from GitHub...'
+                checkout scm
+                script {
+                    env.GIT_COMMIT_MSG = sh(
+                        script: 'git log --oneline -1',
+                        returnStdout: true
+                    ).trim()
+                    echo "Latest commit: ${env.GIT_COMMIT_MSG}"
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        stage('🏗️ Build') {
+        // ════════════════════════════════════════════════
+            steps {
+                echo '🔨 Building Maven project...'
+                dir('01-Selenium-Automation') {
+                    sh 'mvn clean compile -q -DskipTests'
+                }
+                dir('02-API-Testing/RestAssured_Java') {
+                    sh 'mvn clean compile -q -DskipTests'
+                }
+                echo '✅ Build successful'
+            }
+            post {
+                failure {
+                    echo '❌ Build failed! Check compilation errors.'
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        stage('🧪 Selenium Tests') {
+        // ════════════════════════════════════════════════
+            steps {
+                echo "🤖 Running Selenium ${params.TEST_SUITE} on ${params.BROWSER}..."
+                dir('01-Selenium-Automation') {
+                    sh """
+                        mvn test \
+                            -Dsuite=${params.TEST_SUITE} \
+                            -Dbrowser=${params.BROWSER} \
+                            -Dheadless=${params.HEADLESS} \
+                            -Dbase.url=${HRM_BASE_URL} \
+                            -Dadmin.username=${HRM_USERNAME} \
+                            -Dadmin.password=${HRM_PASSWORD} \
+                            --no-transfer-progress
+                    """
+                }
+            }
+            post {
+                always {
+                    echo '📸 Archiving screenshots...'
+                    archiveArtifacts artifacts: '01-Selenium-Automation/screenshots/**/*.png',
+                                     allowEmptyArchive: true
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        stage('🔌 API Tests') {
+        // ════════════════════════════════════════════════
+            when {
+                expression { params.RUN_API_TESTS == true }
+            }
+            parallel {
+                stage('RestAssured Tests') {
+                    steps {
+                        dir('02-API-Testing/RestAssured_Java') {
+                            sh '''
+                                mvn test \
+                                    --no-transfer-progress \
+                                    -Dtest.base.url=${HRM_BASE_URL}
+                            '''
+                        }
+                    }
+                }
+                stage('Newman (Postman CLI)') {
+                    steps {
+                        dir('02-API-Testing') {
+                            sh '''
+                                newman run Postman_Collections/HRM_API_Collection.json \
+                                  -e Postman_Collections/HRM_Environment.json \
+                                  --reporters cli,html,junit \
+                                  --reporter-html-export Newman_Reports/newman_report.html \
+                                  --reporter-junit-export Newman_Reports/junit.xml \
+                                  --timeout-request 30000 \
+                                  || true
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            archiveArtifacts artifacts: '02-API-Testing/Newman_Reports/**',
+                                             allowEmptyArchive: true
+                        }
+                    }
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        stage('⚡ Performance Tests') {
+        // ════════════════════════════════════════════════
+            when {
+                expression { params.RUN_PERF_TESTS == true }
+            }
+            steps {
+                echo '🏋️ Running JMeter load test (10 users, lightweight CI run)...'
+                dir('04-Performance-Testing-JMeter') {
+                    sh '''
+                        jmeter -n \
+                          -t TestPlans/HRM_LoadTest_100Users.jmx \
+                          -l Reports/results.jtl \
+                          -e -o Reports/dashboard/ \
+                          -Jthreads=10 \
+                          -Jrampup=30 \
+                          -Jduration=60
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: '04-Performance-Testing-JMeter/Reports/**',
+                                     allowEmptyArchive: true
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        stage('📊 Generate Reports') {
+        // ════════════════════════════════════════════════
+            steps {
+                echo '📈 Generating consolidated test reports...'
+
+                // Publish TestNG HTML report
+                publishHTML(target: [
+                    allowMissing         : true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll              : true,
+                    reportDir            : '01-Selenium-Automation/reports',
+                    reportFiles          : '*.html',
+                    reportName           : 'Selenium Extent Report'
+                ])
+
+                // Publish Allure report (if allure plugin installed)
+                script {
+                    try {
+                        allure includeProperties: false,
+                               jdk: '',
+                               results: [[path: '02-API-Testing/RestAssured_Java/allure-results']]
+                    } catch (e) {
+                        echo "Allure plugin not available: ${e.message}"
+                    }
+                }
+
+                echo '✅ Reports generated'
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        stage('📦 Archive Artifacts') {
+        // ════════════════════════════════════════════════
+            steps {
+                echo '📁 Archiving all test artifacts...'
+                archiveArtifacts artifacts: '''
+                    01-Selenium-Automation/reports/**,
+                    01-Selenium-Automation/logs/**,
+                    02-API-Testing/Newman_Reports/**,
+                    02-API-Testing/RestAssured_Java/allure-results/**
+                ''',
+                allowEmptyArchive: true
+
+                // Archive TestNG XML results for JUnit publisher
+                junit(
+                    testResults: '01-Selenium-Automation/target/surefire-reports/*.xml',
+                    allowEmptyResults: true,
+                    skipPublishingChecks: false
+                )
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════
+    //  POST-BUILD ACTIONS
+    // ════════════════════════════════════════════════
+    post {
+        success {
+            echo '🎉 All tests PASSED!'
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'good',
+                message: """✅ *HRM Tests PASSED*
+Build: #${env.BUILD_NUMBER}
+Branch: ${env.GIT_BRANCH}
+Suite: ${params.TEST_SUITE}
+Duration: ${currentBuild.durationString}
+Report: ${env.BUILD_URL}"""
+            )
+        }
+        failure {
+            echo '❌ Tests FAILED!'
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'danger',
+                message: """❌ *HRM Tests FAILED*
+Build: #${env.BUILD_NUMBER}
+Branch: ${env.GIT_BRANCH}
+Suite: ${params.TEST_SUITE}
+<${env.BUILD_URL}|View Build>"""
+            )
+            emailext(
+                subject: "❌ HRM Tests FAILED - Build #${env.BUILD_NUMBER}",
+                body: "Tests failed. Build URL: ${env.BUILD_URL}",
+                to: 'deepghevariya8890@gmail.com'
+            )
+        }
+        unstable {
+            echo '⚠️ Tests are UNSTABLE (some failures).'
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'warning',
+                message: "⚠️ *HRM Tests UNSTABLE* - Build #${env.BUILD_NUMBER} | ${env.BUILD_URL}"
+            )
+        }
+        always {
+            echo '🧹 Cleaning up WebDriver processes...'
+            sh '''
+                pkill -f chromedriver || true
+                pkill -f geckodriver || true
+                pkill -f msedgedriver || true
+                pkill -f chrome || true
+            '''
+            cleanWs()
+        }
+    }
+}

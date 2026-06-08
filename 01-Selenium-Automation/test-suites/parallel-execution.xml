@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  PARALLEL EXECUTION SUITE
+  Runs all tests in parallel with 4 threads for faster feedback.
+  
+  Usage: mvn test -Dsuite=parallel-execution -Dheadless=true
+  
+  Note: Requires headless=true for stable parallel execution.
+        WebDriver is ThreadLocal in BaseTest for thread safety.
+-->
+<suite name="HRM_Parallel_Suite" verbose="1" thread-count="4" parallel="classes">
+
+    <listeners>
+        <listener class-name="com.hrm.listeners.TestNGListener"/>
+    </listeners>
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <test name="Parallel_All_Classes" parallel="classes" thread-count="4">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.hrm.tests.LoginTests"/>
+            <class name="com.hrm.tests.EmployeeCRUDTests"/>
+            <class name="com.hrm.tests.LeaveWorkflowTests"/>
+            <class name="com.hrm.tests.PayrollCalculationTests"/>
+            <class name="com.hrm.tests.RecruitmentPipelineTests"/>
+            <class name="com.hrm.tests.SearchAndFilterTests"/>
+        </classes>
+    </test>
+
+</suite>

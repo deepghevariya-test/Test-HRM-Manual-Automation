@@ -1,0 +1,16 @@
+{
+  "id": "hrm-environment-qa",
+  "name": "HRM QA Environment",
+  "values": [
+    { "key": "base_url",    "value": "https://opensource-demo.orangehrmlive.com", "enabled": true },
+    { "key": "username",    "value": "Admin",    "enabled": true },
+    { "key": "password",    "value": "admin123", "enabled": true },
+    { "key": "csrf_token",  "value": "",         "enabled": true },
+    { "key": "session_id",  "value": "",         "enabled": true },
+    { "key": "employee_id", "value": "7",        "enabled": true },
+    { "key": "created_emp_id", "value": "",      "enabled": true },
+    { "key": "leave_type_id",  "value": "1",     "enabled": true },
+    { "key": "api_version",    "value": "v2",    "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}

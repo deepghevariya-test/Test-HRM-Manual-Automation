@@ -1,0 +1,325 @@
+{
+  "info": {
+    "_postman_id": "hrm-testing-collection-v1",
+    "name": "HRM API Test Collection",
+    "description": "Comprehensive API tests for OrangeHRM - Covers Authentication, Employee CRUD, Leave Management, Payroll, Recruitment.\n\nAuthor: Deep Ghevariya | deepghevariya8890@gmail.com\nTarget: https://opensource-demo.orangehrmlive.com",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://opensource-demo.orangehrmlive.com" },
+    { "key": "username", "value": "Admin" },
+    { "key": "password", "value": "admin123" },
+    { "key": "auth_token", "value": "" },
+    { "key": "employee_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "TC_AUTH_001 - GET Login Page",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('Response contains OrangeHRM', function() { pm.expect(pm.response.text()).to.include('OrangeHRM'); });",
+                  "pm.test('Response time < 5000ms', function() { pm.expect(pm.response.responseTime).to.be.below(5000); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/web/index.php/auth/login"
+          }
+        },
+        {
+          "name": "TC_AUTH_002 - Extract CSRF Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const html = pm.response.text();",
+                  "const tokenMatch = html.match(/name=\"_token\" value=\"([^\"]+)\"/);",
+                  "if (tokenMatch) {",
+                  "  pm.collectionVariables.set('csrf_token', tokenMatch[1]);",
+                  "  pm.test('CSRF token extracted', () => pm.expect(tokenMatch[1]).to.not.be.empty);",
+                  "} else {",
+                  "  pm.test('CSRF token present', () => { throw new Error('CSRF token not found'); });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/web/index.php/auth/login"
+          }
+        },
+        {
+          "name": "TC_AUTH_003 - POST Login (Authenticate)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful (redirect or 200)', function() {",
+                  "  pm.expect([200, 302]).to.include(pm.response.code);",
+                  "});",
+                  "const session = pm.cookies.get('PHPSESSID');",
+                  "if (session) {",
+                  "  pm.collectionVariables.set('session_id', session);",
+                  "  pm.test('Session cookie obtained', () => pm.expect(session).to.not.be.empty);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "_token", "value": "{{csrf_token}}" },
+                { "key": "username", "value": "{{username}}" },
+                { "key": "password", "value": "{{password}}" }
+              ]
+            },
+            "url": "{{base_url}}/web/index.php/auth/validate"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Employee Management API",
+      "item": [
+        {
+          "name": "TC_EMP_API_001 - GET All Employees",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has data array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "});",
+                  "pm.test('Response has meta with total', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.meta).to.have.property('total');",
+                  "  pm.expect(json.meta.total).to.be.a('number');",
+                  "});",
+                  "pm.test('Response time < 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));",
+                  "// Store first employee ID for subsequent tests",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length > 0) {",
+                  "  pm.collectionVariables.set('employee_id', json.data[0].empNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/web/index.php/api/v2/pim/employees?limit=50&offset=0",
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_EMP_API_002 - GET Employee by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Employee data has firstName', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.property('firstName');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/web/index.php/api/v2/pim/employees/{{employee_id}}"
+          }
+        },
+        {
+          "name": "TC_EMP_API_003 - POST Create Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 201', () => {",
+                  "  pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('Created employee has empNumber', () => {",
+                  "    pm.expect(json.data.empNumber).to.be.a('number');",
+                  "  });",
+                  "  pm.collectionVariables.set('created_emp_id', json.data.empNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Postman\",\n  \"middleName\": \"Test\",\n  \"lastName\": \"Employee\"\n}"
+            },
+            "url": "{{base_url}}/web/index.php/api/v2/pim/employees"
+          }
+        },
+        {
+          "name": "TC_EMP_API_004 - GET Employees with Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Pagination limit respected', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.at.most(5);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/web/index.php/api/v2/pim/employees?limit=5&offset=0",
+              "query": [
+                { "key": "limit", "value": "5" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_EMP_API_005 - DELETE Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/web/index.php/api/v2/pim/employees"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Leave Management API",
+      "item": [
+        {
+          "name": "TC_LVE_API_001 - GET Leave Types",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Leave types returned', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.data.length).to.be.greaterThan(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/web/index.php/api/v2/leave/leave-types?limit=50",
+              "query": [{ "key": "limit", "value": "50" }]
+            }
+          }
+        },
+        {
+          "name": "TC_LVE_API_002 - GET Leave Requests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 403', () => {",
+                  "  pm.expect([200, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/web/index.php/api/v2/leave/leave-requests?limit=50&offset=0",
+              "query": [
+                { "key": "limit", "value": "50" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

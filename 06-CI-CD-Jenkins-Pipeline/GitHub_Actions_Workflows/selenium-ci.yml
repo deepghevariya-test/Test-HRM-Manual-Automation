@@ -1,0 +1,146 @@
+name: 🤖 Selenium Automation CI
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**' ]
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+env:
+  JAVA_VERSION: '17'
+  MAVEN_OPTS: '-Xmx2048m'
+
+jobs:
+  # ════════════════════════════════════════════════
+  #  SMOKE TESTS — Run on every PR
+  # ════════════════════════════════════════════════
+  smoke-tests:
+    name: 🚨 Smoke Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+      fail-fast: false   # Run all browsers even if one fails
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: 🌐 Setup Chrome
+        if: matrix.browser == 'chrome'
+        uses: browser-actions/setup-chrome@latest
+
+      - name: 🦊 Setup Firefox
+        if: matrix.browser == 'firefox'
+        uses: browser-actions/setup-firefox@latest
+
+      - name: 📦 Cache Maven Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('01-Selenium-Automation/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: 🏗️ Build Project
+        working-directory: 01-Selenium-Automation
+        run: mvn clean compile -q -DskipTests
+
+      - name: 🤖 Run Smoke Tests (Headless)
+        working-directory: 01-Selenium-Automation
+        env:
+          admin.username: ${{ secrets.HRM_ADMIN_USERNAME }}
+          admin.password: ${{ secrets.HRM_ADMIN_PASSWORD }}
+          base.url: ${{ secrets.HRM_BASE_URL || 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login' }}
+        run: |
+          mvn test \
+            -Dsuite=smoke-test \
+            -Dbrowser=${{ matrix.browser }} \
+            -Dheadless=true \
+            --no-transfer-progress
+
+      - name: 📊 Publish Test Results
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: '01-Selenium-Automation/target/surefire-reports/*.xml'
+          check_name: 'Smoke Tests - ${{ matrix.browser }}'
+          fail_on_failure: false
+
+      - name: 📸 Upload Screenshots on Failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failure-screenshots-${{ matrix.browser }}-${{ github.run_number }}
+          path: 01-Selenium-Automation/screenshots/failed_tests/
+          retention-days: 7
+
+      - name: 📈 Upload Extent Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extent-report-${{ matrix.browser }}-${{ github.run_number }}
+          path: 01-Selenium-Automation/reports/
+          retention-days: 14
+
+  # ════════════════════════════════════════════════
+  #  FULL REGRESSION — Run on main branch only
+  # ════════════════════════════════════════════════
+  regression-tests:
+    name: 🔁 Full Regression Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: smoke-tests
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - uses: browser-actions/setup-chrome@latest
+
+      - name: 🏗️ Build
+        working-directory: 01-Selenium-Automation
+        run: mvn clean compile -q -DskipTests
+
+      - name: 🔁 Run Regression Suite
+        working-directory: 01-Selenium-Automation
+        run: |
+          mvn test \
+            -Dsuite=regression-suite \
+            -Dbrowser=chrome \
+            -Dheadless=true \
+            --no-transfer-progress
+
+      - name: 📊 Summary Report
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: '01-Selenium-Automation/target/surefire-reports/*.xml'
+          check_name: 'Full Regression Suite'
+
+      - name: 📦 Archive All Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-artifacts-${{ github.run_number }}
+          path: |
+            01-Selenium-Automation/reports/
+            01-Selenium-Automation/screenshots/
+            01-Selenium-Automation/logs/
+          retention-days: 30

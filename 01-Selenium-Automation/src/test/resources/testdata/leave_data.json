@@ -1,0 +1,68 @@
+[
+  {
+    "scenario": "casual_leave_approved",
+    "employeeId": "EMP001",
+    "employeeName": "Rahul Verma",
+    "leaveType": "CasualLeave",
+    "fromDate": "2025-06-10",
+    "toDate": "2025-06-11",
+    "numberOfDays": 2,
+    "reason": "Personal work - Visit to hometown",
+    "status": "Approved",
+    "approvedBy": "HR Manager",
+    "balance": { "total": 12, "used": 2, "remaining": 10 }
+  },
+  {
+    "scenario": "sick_leave_pending",
+    "employeeId": "EMP002",
+    "employeeName": "Sneha Patel",
+    "leaveType": "SickLeave",
+    "fromDate": "2025-07-05",
+    "toDate": "2025-07-07",
+    "numberOfDays": 3,
+    "reason": "Fever and medical rest",
+    "status": "Pending",
+    "approvedBy": null,
+    "balance": { "total": 7, "used": 0, "remaining": 7 }
+  },
+  {
+    "scenario": "annual_leave_rejected",
+    "employeeId": "EMP003",
+    "employeeName": "Vikas Choudhary",
+    "leaveType": "AnnualLeave",
+    "fromDate": "2025-12-25",
+    "toDate": "2025-12-31",
+    "numberOfDays": 7,
+    "reason": "Year-end vacation",
+    "status": "Rejected",
+    "rejectionReason": "Team strength insufficient during year-end",
+    "approvedBy": "Team Manager",
+    "balance": { "total": 21, "used": 0, "remaining": 21 }
+  },
+  {
+    "scenario": "unpaid_leave",
+    "employeeId": "EMP004",
+    "employeeName": "Ananya Nair",
+    "leaveType": "LeaveWithoutPay",
+    "fromDate": "2025-09-01",
+    "toDate": "2025-09-03",
+    "numberOfDays": 3,
+    "reason": "Exhausted all paid leave",
+    "status": "Approved",
+    "approvedBy": "HR Manager",
+    "balance": { "total": 0, "used": 0, "remaining": 0, "leaveWithoutPay": 3 }
+  },
+  {
+    "scenario": "maternity_leave",
+    "employeeId": "EMP005",
+    "employeeName": "Pooja Mishra",
+    "leaveType": "MaternityLeave",
+    "fromDate": "2025-11-01",
+    "toDate": "2026-02-28",
+    "numberOfDays": 90,
+    "reason": "Maternity leave as per company policy",
+    "status": "Approved",
+    "approvedBy": "HR Director",
+    "balance": { "total": 90, "used": 90, "remaining": 0 }
+  }
+]

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.hrm</groupId>
+    <artifactId>hrm-selenium-automation</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>HRM Selenium Automation Framework</name>
+    <description>Production-ready Selenium automation for HRM application using TestNG + POM</description>
+    <url>https://github.com/deepghevariya/HRM-Testing-Automation-Framework</url>
+
+    <developers>
+        <developer>
+            <name>Deep Ghevariya</name>
+            <email>deepghevariya8890@gmail.com</email>
+            <organization>Seravion Technologies</organization>
+        </developer>
+    </developers>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Dependency Versions -->
+        <selenium.version>4.18.1</selenium.version>
+        <testng.version>7.9.0</testng.version>
+        <webdrivermanager.version>5.7.0</webdrivermanager.version>
+        <extentreports.version>5.1.1</extentreports.version>
+        <log4j.version>2.22.1</log4j.version>
+        <poi.version>5.2.5</poi.version>
+        <jackson.version>2.16.1</jackson.version>
+        <opencsv.version>5.9</opencsv.version>
+
+        <!-- Test Suite (override via -Dsuite=smoke-test) -->
+        <suite>regression-suite</suite>
+        <browser>chrome</browser>
+        <headless>false</headless>
+    </properties>
+
+    <dependencies>
+        <!-- ═══════════════════════════════════════════ -->
+        <!--          SELENIUM WEBDRIVER                   -->
+        <!-- ═══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${selenium.version}</version>
+        </dependency>
+
+        <!-- WebDriver Manager - auto driver management -->
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>${webdrivermanager.version}</version>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!--          TESTNG FRAMEWORK                     -->
+        <!-- ═══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!--          REPORTING                            -->
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- Extent Reports 5 -->
+        <dependency>
+            <groupId>com.aventstack</groupId>
+            <artifactId>extentreports</artifactId>
+            <version>${extentreports.version}</version>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!--          LOGGING                              -->
+        <!-- ═══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!--          DATA-DRIVEN TESTING                  -->
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- Apache POI - Excel Read/Write -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+
+        <!-- OpenCSV - CSV parsing -->
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>${opencsv.version}</version>
+        </dependency>
+
+        <!-- Jackson - JSON parsing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!--          UTILITIES                            -->
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- Faker - realistic test data generation -->
+        <dependency>
+            <groupId>com.github.javafaker</groupId>
+            <artifactId>javafaker</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+
+        <!-- Commons IO -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.15.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Surefire Plugin - TestNG runner -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.3</version>
+                <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>test-suites/${suite}.xml</suiteXmlFile>
+                    </suiteXmlFiles>
+                    <systemPropertyVariables>
+                        <browser>${browser}</browser>
+                        <headless>${headless}</headless>
+                    </systemPropertyVariables>
+                    <!-- Retry on failure -->
+                    <rerunFailingTestsCount>1</rerunFailingTestsCount>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Wrapper Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-wrapper-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+        </plugins>
+
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+    </build>
+</project>
